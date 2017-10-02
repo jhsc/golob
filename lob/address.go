@@ -3,6 +3,7 @@ package lob
 import "time"
 import "encoding/json"
 import "bytes"
+import "fmt"
 
 // AddressService handles communication with the address related
 // methods of the Lob API.
@@ -60,5 +61,19 @@ func (us *AddressService) Create(address *AddressRequest) (*AddressRequest, erro
 	if err != nil {
 		return address, err
 	}
+	return address, err
+}
+
+// Get ...
+func (us *AddressService) Get(id string) (*Address, error) {
+	u := fmt.Sprintf("addresses/%v", id)
+	req, err := us.client.NewRequest("GET", u, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	address := new(Address)
+	_, err = us.client.Do(req, address)
 	return address, err
 }
