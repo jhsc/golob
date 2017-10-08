@@ -1,9 +1,12 @@
 package lob
 
-import "time"
-import "encoding/json"
-import "bytes"
-import "fmt"
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+)
 
 // AddressService handles communication with the address related
 // methods of the Lob API.
@@ -49,6 +52,21 @@ type AddressRequest struct {
 	} `json:"metadata,omitempty"`
 }
 
+//DeleteAddressResponse ...
+type DeleteAddressResponse struct {
+	ID      string `json:"id"`
+	Deleted bool   `json:"deleted"`
+}
+
+// ListAddressesResponse ....
+type ListAddressesResponse struct {
+	Data        []Address `json:"data"`
+	Object      string    `json:"object"`
+	NextURL     string    `json:"next_url"`
+	PreviousURL string    `json:"previous_url"`
+	Count       int       `json:"count"`
+}
+
 // Create a new address object.
 // Lob API docs: https://lob.com/docs/ruby#addresses_create
 func (us *AddressService) Create(address *AddressRequest) (*AddressRequest, error) {
@@ -74,6 +92,49 @@ func (us *AddressService) Get(id string) (*Address, error) {
 	}
 
 	address := new(Address)
+	_, err = us.client.Do(req, address)
+	return address, err
+}
+
+// Delete ...
+func (us *AddressService) Delete(id string) error {
+	u := fmt.Sprintf("addresses/%v", id)
+	req, err := us.client.NewRequest("DELETE", u, nil)
+
+	if err != nil {
+		return err
+	}
+
+	delResp := new(DeleteAddressResponse)
+	_, err = us.client.Do(req, delResp)
+
+	if err != nil {
+		return err
+	}
+
+	if !delResp.Deleted {
+		return errors.New("Failed to delete address")
+	}
+	return nil
+}
+
+// List ...
+func (us *AddressService) List(offset, limit int) (*ListAddressesResponse, error) {
+	if offset <= 0 {
+		offset = 0
+	}
+	if limit < 10 || limit > 100 {
+		limit = 10
+	}
+
+	u := fmt.Sprintf("addresses/?limit=%v&offset=%v", limit, offset)
+	req, err := us.client.NewRequest("GET", u, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	address := new(ListAddressesResponse)
 	_, err = us.client.Do(req, address)
 	return address, err
 }
